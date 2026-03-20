@@ -1,0 +1,233 @@
+ <!DOCTYPE html>
+<html>
+<head>
+<title>My Music Player</title>
+
+<style>
+body {
+    margin: 0;
+    background: black;
+    overflow: hidden;
+    font-family: sans-serif;
+}
+
+/* 🔥 Container */
+#container {
+    display: flex;
+    overflow-x: auto;
+    height: 100vh;
+    align-items: center;
+    scroll-snap-type: x mandatory;
+    perspective: 1000px;
+}
+
+/* 🔥 Album wrapper */
+.album {
+    flex: 0 0 auto;
+    margin: 0 60px;
+    scroll-snap-align: center;
+    transition: transform 0.3s ease;
+}
+
+/* 🔥 Images */
+.album img {
+    width: 320px;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 12px;
+    transition: transform 0.3s ease, opacity 0.3s;
+}
+
+/* 🎯 CENTER */
+.album.active img {
+    transform: scale(1.2) rotateY(0deg);
+    opacity: 1;
+}
+
+/* ↔️ LEFT SIDE */
+.album.left img {
+    transform: rotateY(40deg) scale(0.9);
+    opacity: 0.6;
+}
+
+/* ↔️ RIGHT SIDE */
+.album.right img {
+    transform: rotateY(-40deg) scale(0.9);
+    opacity: 0.6;
+}
+</style>
+</head>
+
+<body>
+
+<div id="container"></div>
+<audio id="audio"></audio>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyCQGE1Z_ikaZVjajxRS9TdHq23_ic7W5q4",
+  authDomain: "fir-c0c18.firebaseapp.com",
+  databaseURL: "https://fir-c0c18-default-rtdb.firebaseio.com",
+  projectId: "fir-c0c18",
+  storageBucket: "fir-c0c18.firebasestorage.app",
+  messagingSenderId: "11840063593",
+  appId: "1:11840063593:web:73ac480ff6c200b7dfbaf8"
+};
+
+firebase.initializeApp(firebaseConfig);
+const storage = firebase.storage();
+
+const container = document.getElementById("container");
+const audio = document.getElementById("audio");
+
+let albums = [];
+let current = null;
+let isPlaying = false;
+
+/* 🔥 LOAD SONGS */
+function loadSongs() {
+    const coversRef = storage.ref("covers");
+
+    coversRef.listAll().then(res => {
+        res.items.forEach(item => {
+
+            item.getDownloadURL().then(url => {
+
+                const img = document.createElement("img");
+                img.src = url;
+
+                const div = document.createElement("div");
+                div.className = "album";
+
+                div.appendChild(img);
+                container.appendChild(div);
+                albums.push(div);
+
+                img.onclick = () => {
+                    const songName = item.name.replace(".jpg", ".mp3");
+                    const songRef = storage.ref("MyMusic/" + songName);
+
+                    songRef.getDownloadURL().then(songUrl => {
+                        audio.src = songUrl;
+                        audio.play();
+                        isPlaying = true;
+                        current = audio;
+                    });
+                };
+
+                updateCoverFlow();
+            });
+
+        });
+    });
+}
+
+/* 🔥 COVER FLOW EFFECT */
+function updateCoverFlow() {
+    const center = window.innerWidth / 2;
+
+    albums.forEach(album => {
+        const rect = album.getBoundingClientRect();
+        const albumCenter = rect.left + rect.width / 2;
+
+        album.classList.remove("active", "left", "right");
+
+        if (Math.abs(center - albumCenter) < 100) {
+            album.classList.add("active");
+        } else if (albumCenter < center) {
+            album.classList.add("left");
+        } else {
+            album.classList.add("right");
+        }
+    });
+}
+
+/* 🔥 SCROLL DETECTION */
+container.addEventListener("scroll", () => {
+    requestAnimationFrame(updateCoverFlow);
+});
+
+/* 🎧 TAP PLAY / PAUSE */
+container.addEventListener("click", () => {
+    if (!current) return;
+
+    if (isPlaying) {
+        audio.pause();
+    } else {
+        audio.play();
+    }
+    isPlaying = !isPlaying;
+});
+
+/* 🎚 GESTURES FIXED */
+let startY = 0;
+let startX = 0;
+
+container.addEventListener("touchstart", e => {
+    startY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
+});
+
+container.addEventListener("touchmove", e => {
+    if (!current) return;
+
+    let y = e.touches[0].clientY;
+    let x = e.touches[0].clientX;
+
+    let dy = startY - y;
+    let dx = startX - x;
+
+    /* 🎚 VOLUME */
+    if (Math.abs(dy) > Math.abs(dx)) {
+        audio.volume += dy * 0.002;
+        audio.volume = Math.max(0, Math.min(1, audio.volume));
+    }
+
+    /* ⏩ SEEK (only bottom area) */
+    if (startY > window.innerHeight * 0.75) {
+        audio.currentTime += dx * 0.02;
+    }
+
+
+});
+
+let isMouseDown = false;
+
+container.addEventListener("mousedown", e => {
+    isMouseDown = true;
+    startY = e.clientY;
+    startX = e.clientX;
+});
+
+container.addEventListener("mouseup", () => {
+    isMouseDown = false;
+});
+
+container.addEventListener("mousemove", e => {
+    if (!isMouseDown || !current) return;
+
+    let dy = startY - e.clientY;
+    let dx = startX - e.clientX;
+
+    // 🎚 Volume
+    if (Math.abs(dy) > Math.abs(dx)) {
+        audio.volume += dy * 0.002;
+        audio.volume = Math.max(0, Math.min(1, audio.volume));
+    }
+
+    // ⏩ Seek
+    if (startY > window.innerHeight * 0.75) {
+        audio.currentTime += dx * 0.02;
+    }
+});
+
+/* LOAD */
+loadSongs();
+</script>
+
+</body>
+</html>
