@@ -208,17 +208,19 @@
   const b2s = u8 => { let s = ""; u8.forEach(b => s += String.fromCharCode(b)); return btoa(s); };
   const s2b = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
   async function pipe(data, stream) {
-    const w = stream.writable.getWriter(); w.write(data); w.close();
+    const w = stream.writable.getWriter();
+    await w.write(data);
+    await w.close();
     return new Uint8Array(await new Response(stream.readable).arrayBuffer());
   }
-  const pack = async (prefix, sdp) => prefix + b2s(await pipe(new TextEncoder().encode(slim(sdp)), new CompressionStream("deflate-raw")));
-  const unpack = async text => new TextDecoder().decode(await pipe(s2b(text.slice(1)), new DecompressionStream("deflate-raw")));
+  const pack = async (prefix, sdp) => prefix + b2s(await pipe(new TextEncoder().encode(slim(sdp)), new CompressionStream("deflate")));
+  const unpack = async text => new TextDecoder().decode(await pipe(s2b(text.slice(1)), new DecompressionStream("deflate")));
 
   function waitForIce(pc) {
     return new Promise(resolve => {
       if (pc.iceGatheringState === "complete") return resolve();
       pc.addEventListener("icegatheringstatechange", () => { if (pc.iceGatheringState === "complete") resolve(); });
-      setTimeout(resolve, 3500);
+      setTimeout(resolve, 8000);
     });
   }
 
