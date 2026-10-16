@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phone Speaker</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; }
+  h1 { font-size: 1.4rem; text-align: center; }
+  h3 { margin: 18px 0 6px; }
+  button { width: 100%; padding: 14px; margin: 6px 0; font-size: 1.05rem; border: 0; border-radius: 12px; background: #4f46e5; color: #fff; cursor: pointer; }
+  button.alt { background: #0d9488; }
+  button.ghost { background: #6b7280; }
+  textarea { width: 100%; box-sizing: border-box; height: 110px; padding: 10px; font-size: .8rem; border-radius: 10px; border: 2px solid #888; word-break: break-all; }
+  #status { margin-top: 14px; text-align: center; opacity: .85; min-height: 1.5em; }
+  .hidden { display: none; }
+  .step { opacity: .8; font-size: .95rem; }
+</style>
+</head>
+<body>
+  <h1>🔊 Laptop → Phone Speaker</h1>
+
+  <div id="menu">
+    <button id="btnSend">💻 This is the LAPTOP (send audio)</button>
+    <button id="btnRecv" class="alt">📱 This is the PHONE (play audio)</button>
+  </div>
+
+  <!-- LAPTOP -->
+  <div id="sendView" class="hidden">
+    <h3>Step 1 – Copy this code to your phone</h3>
+    <p class="step">Send it to yourself (WhatsApp / Telegram / email) and paste it on the phone page.</p>
+    <textarea id="offerOut" readonly placeholder="Preparing..."></textarea>
+    <button id="copyOffer" class="ghost">Copy code</button>
+
+    <h3>Step 2 – Paste the phone's reply here</h3>
+    <textarea id="answerIn" placeholder="Paste answer code from phone"></textarea>
+    <button id="btnConnect">Connect</button>
+  </div>
+
+  <!-- PHONE -->
+  <div id="recvView" class="hidden">
+    <h3>Step 1 – Paste the laptop's code</h3>
+    <textarea id="offerIn" placeholder="Paste code from laptop"></textarea>
+    <button id="btnAnswer" class="alt">Create reply</button>
+
+    <div id="answerBox" class="hidden">
+      <h3>Step 2 – Copy this reply to the laptop</h3>
+      <textarea id="answerOut" readonly></textarea>
+      <button id="copyAnswer" class="ghost">Copy reply</button>
+    </div>
+
+    <audio id="player" autoplay playsinline controls style="width:100%;margin-top:14px"></audio>
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+    const $ = id => document.getElementById(id);
+    const setStatus = t => $("status").textContent = t;
+    const show = v => { ["menu","sendView","recvView"].forEach(x => $(x).classList.add("hidden")); $(v).classList.remove("hidden"); };
+
+    const encode = d => btoa(unescape(encodeURIComponent(JSON.stringify({ type: d.type, sdp: d.sdp }))));
+    const decode = s => JSON.parse(decodeURIComponent(escape(atob(s.replace(/\s+/g, "")))));
+
+    function waitForIce(pc) {
+      return new Promise(resolve => {
+        if (pc.iceGatheringState === "complete") return resolve();
+        pc.addEventListener("icegatheringstatechange", () => {
+          if (pc.iceGatheringState === "complete") resolve();
+        });
+        setTimeout(resolve, 4000); // don't wait forever
+      });
+    }
+
+    async function copy(el, btn) {
+      try { await navigator.clipboard.writeText(el.value); } catch { el.select(); document.execCommand("copy"); }
+      btn.textContent = "Copied ✓"; setTimeout(() => btn.textContent = btn.dataset.l, 1500);
+    }
+    $("copyOffer").dataset.l = "Copy code"; $("copyAnswer").dataset.l = "Copy reply";
+    $("copyOffer").onclick = () => copy($("offerOut"), $("copyOffer"));
+    $("copyAnswer").onclick = () => copy($("answerOut"), $("copyAnswer"));
+
+    // ---------------- LAPTOP ----------------
+    let senderPc;
+    $("btnSend").onclick = async () => {
+      try {
+        // Windows: choose "Entire Screen" + tick "Share system audio". Mac: choose a Chrome tab + "Share tab audio".
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+        });
+        if (!stream.getAudioTracks().length) {
+          stream.getTracks().forEach(t => t.stop());
+          return setStatus("No audio captured. Tick 'Share system audio' / 'Share tab audio'.");
+        }
+        stream.getVideoTracks().forEach(t => t.stop());
+        show("sendView");
+        setStatus("Preparing code...");
+
+        senderPc = new RTCPeerConnection(rtcConfig);
+        stream.getAudioTracks().forEach(t => senderPc.addTrack(t, stream));
+        senderPc.onconnectionstatechange = () => setStatus("Connection: " + senderPc.connectionState);
+        stream.getAudioTracks()[0].onended = () => { senderPc.close(); setStatus("Sharing stopped."); };
+
+        await senderPc.setLocalDescription(await senderPc.createOffer());
+        await waitForIce(senderPc);
+        $("offerOut").value = encode(senderPc.localDescription);
+        setStatus("Copy the code to your phone.");
+      } catch (err) { setStatus("Error: " + err.message); }
+    };
+
+    $("btnConnect").onclick = async () => {
+      try {
+        const answer = decode($("answerIn").value);
+        await senderPc.setRemoteDescription(new RTCSessionDescription(answer));
+        setStatus("Connecting...");
+      } catch (err) { setStatus("Invalid reply code. Copy it again in full."); }
+    };
+
+    // ---------------- PHONE ----------------
+    $("btnRecv").onclick = () => show("recvView");
+
+    $("btnAnswer").onclick = async () => {
+      try {
+        const offer = decode($("offerIn").value);
+        const pc = new RTCPeerConnection(rtcConfig);
+        pc.ontrack = e => { $("player").srcObject = e.streams[0]; $("player").play().catch(() => {}); };
+        pc.onconnectionstatechange = () => setStatus("Connection: " + pc.connectionState);
+
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        await pc.setLocalDescription(await pc.createAnswer());
+        setStatus("Preparing reply...");
+        await waitForIce(pc);
+        $("answerOut").value = encode(pc.localDescription);
+        $("answerBox").classList.remove("hidden");
+        setStatus("Copy the reply to your laptop, then press Connect there.");
+      } catch (err) { setStatus("Invalid laptop code. Copy it again in full."); }
+    };
+  </script>
+</body>
+</html>
