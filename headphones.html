@@ -177,64 +177,118 @@
 
   /* ---------- Libraries with backup sources ---------- */
   function loadScript(src) {
-    return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    return new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = src; s.onload = res; s.onerror = () => rej(new Error("Could not load " + src));
+      document.head.appendChild(s);
+    });
+  }
+  async function loadFirst(urls, test) {
+    if (test()) return;
+    for (const url of urls) {
+      try { await loadScript(url); } catch (_) {}
+      if (test()) return;
+    }
+    throw new Error("A required library could not be loaded. Check your internet connection or CDN access.");
   }
   async function ensureLibs() {
-    if (!window.jsQR) for (const u of ["https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js", "https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"]) { try { await loadScript(u); if (window.jsQR) break; } catch {} }
-    if (!window.qrcode) for (const u of ["https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js", "https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"]) { try { await loadScript(u); if (window.qrcode) break; } catch {} }
-    if (!window.jsQR || !window.qrcode) throw { name: "LibraryError" };
+    await loadFirst([
+      "https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js",
+      "https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"
+    ], () => typeof window.jsQR === "function");
+    await loadFirst([
+      "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js",
+      "https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"
+    ], () => typeof window.qrcode === "function");
+    await loadFirst([
+      "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js",
+      "https://unpkg.com/pako@2.1.0/dist/pako.min.js"
+    ], () => !!(window.pako && window.pako.deflateRaw && window.pako.inflateRaw));
   }
 
   /* ---------- Compact signaling payload ---------- */
   function slim(sdp) {
     const lines = sdp.split(/\r?\n/).filter(Boolean);
     let opus = null;
-    for (const l of lines) { const m = l.match(/^a=rtpmap:(\d+) opus\/48000/i); if (m) { opus = m[1]; break; } }
-    let cands = 0; const out = [];
-    for (let l of lines) {
+    for (const line of lines) {
+      const match = line.match(/^a=rtpmap:(\d+) opus\/48000/i);
+      if (match) { opus = match[1]; break; }
+    }
+    let candidates = 0;
+    const out = [];
+    for (let line of lines) {
       if (opus) {
-        const m = l.match(/^a=(?:rtpmap|fmtp|rtcp-fb):(\d+)/);
-        if (m && m[1] !== opus) continue;
-        if (l.startsWith("m=audio")) l = l.split(" ").slice(0, 3).join(" ") + " " + opus;
+        const match = line.match(/^a=(?:rtpmap|fmtp|rtcp-fb):(\d+)/);
+        if (match && match[1] !== opus) continue;
+        if (line.startsWith("m=audio")) line = line.split(" ").slice(0, 3).join(" ") + " " + opus;
       }
-      if (l.startsWith("a=candidate")) {
-        if (/ tcp /i.test(l) || /fe80:/i.test(l)) continue;
-        if (++cands > 5) continue;
+      if (line.startsWith("a=candidate")) {
+        if (/ tcp /i.test(line) || /fe80:/i.test(line)) continue;
+        if (++candidates > 5) continue;
       }
-      out.push(l);
+      out.push(line);
     }
     return out.join("\r\n") + "\r\n";
   }
-  const b2s = u8 => { let s = ""; u8.forEach(b => s += String.fromCharCode(b)); return btoa(s); };
-  const s2b = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
-  async function pipe(data, stream) {
-    const w = stream.writable.getWriter();
-    await w.write(data);
-    await w.close();
-    return new Uint8Array(await new Response(stream.readable).arrayBuffer());
+  const b2s = bytes => {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(binary);
+  };
+  const s2b = text => Uint8Array.from(atob(text), ch => ch.charCodeAt(0));
+  async function pack(prefix, sdp) {
+    await ensureLibs();
+    const compressed = window.pako.deflateRaw(new TextEncoder().encode(slim(sdp)));
+    return prefix + b2s(compressed);
   }
-  const pack = async (prefix, sdp) => prefix + b2s(await pipe(new TextEncoder().encode(slim(sdp)), new CompressionStream("deflate")));
-  const unpack = async text => new TextDecoder().decode(await pipe(s2b(text.slice(1)), new DecompressionStream("deflate")));
+  async function unpack(text) {
+    await ensureLibs();
+    if (!text || text.length < 2) throw new Error("The pairing code is empty or incomplete.");
+    const bytes = window.pako.inflateRaw(s2b(text.slice(1)));
+    return new TextDecoder().decode(bytes);
+  }
 
   function waitForIce(pc) {
     return new Promise(resolve => {
       if (pc.iceGatheringState === "complete") return resolve();
       pc.addEventListener("icegatheringstatechange", () => { if (pc.iceGatheringState === "complete") resolve(); });
-      setTimeout(resolve, 8000);
+      setTimeout(resolve, 3500);
     });
   }
 
   /* ---------- QR draw ---------- */
   async function drawQR(canvas, box, text) {
-    await ensureLibs();
-    const qr = qrcode(0, "L"); qr.addData(text); qr.make();
-    const n = qr.getModuleCount(), quiet = 4, s = 6, size = (n + quiet * 2) * s;
-    canvas.width = canvas.height = size;
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = "#000";
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * s, (r + quiet) * s, s, s);
-    box.classList.add("ready");
+    box.classList.remove("ready");
+    try {
+      await ensureLibs();
+      if (!text) throw new Error("No pairing data was generated.");
+      const qr = window.qrcode(0, "L");
+      qr.addData(text, "Byte");
+      qr.make();
+      const modules = qr.getModuleCount();
+      const quiet = 4;
+      const cell = Math.max(3, Math.min(8, Math.floor(480 / (modules + quiet * 2))));
+      const size = (modules + quiet * 2) * cell;
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas is not available in this browser.");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = "#000";
+      for (let row = 0; row < modules; row++) {
+        for (let col = 0; col < modules; col++) {
+          if (qr.isDark(row, col)) ctx.fillRect((col + quiet) * cell, (row + quiet) * cell, cell, cell);
+        }
+      }
+      box.classList.add("ready");
+    } catch (err) {
+      box.classList.remove("ready");
+      console.error("QR generation failed:", err);
+      toast("Couldn't create QR code: " + (err && err.message ? err.message : "QR library or code error"));
+      throw err;
+    }
   }
 
   /* ---------- Camera + scan ---------- */
@@ -368,7 +422,10 @@
       state.code = await pack("O", pc.localDescription.sdp);
       await drawQR($("qrA"), $("qrBoxA"), state.code);
     } catch (err) {
-      if (err && err.name !== "NotAllowedError") toast("Couldn't start: " + (err.message || err.name));
+      console.error("Laptop setup failed:", err);
+      if (err && err.name === "NotAllowedError") toast("Screen sharing was cancelled.");
+      else toast("Couldn't start: " + (err && (err.message || err.name) || "unknown error"));
+      // Keep the current screen visible long enough for the error toast to be read.
       reset();
     }
   };
@@ -409,8 +466,9 @@
       state.code = await pack("A", pc.localDescription.sdp);
       show("replyQR");
       await drawQR($("qrB"), $("qrBoxB"), state.code);
-    } catch {
-      toast("That isn't the laptop's code. Try again.");
+    } catch (err) {
+      console.error("Phone pairing failed:", err);
+      toast("Couldn't read/connect: " + (err && err.message ? err.message : "check the laptop QR code"));
       show("scanOffer"); startScan("viewA", "videoA", onOfferCode);
     }
   }
