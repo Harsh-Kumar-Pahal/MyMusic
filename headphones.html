@@ -2,181 +2,144 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>Phone Speaker</title>
 <style>
-  :root {
-    --bg1: #eef2ff; --bg2: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b;
-    --accent: #4f46e5; --accent2: #0d9488; --border: #e2e8f0; --shadow: 0 10px 30px rgba(15,23,42,.08);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg1: #0b1020; --bg2: #111827; --card: #1a2236; --text: #f1f5f9; --muted: #94a3b8;
-      --accent: #818cf8; --accent2: #2dd4bf; --border: #2a3550; --shadow: 0 10px 30px rgba(0,0,0,.4);
-    }
-  }
+  :root { --text:#111827; --muted:#6b7280; --line:#e5e7eb; --soft:#f9fafb; --accent:#4f46e5; --danger:#dc2626; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; min-height: 100%; }
+  html, body { margin: 0; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    color: var(--text);
-    background: linear-gradient(160deg, var(--bg1), var(--bg2));
-    min-height: 100vh; min-height: 100dvh;
-    display: flex; align-items: center; justify-content: center;
-    padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+    background: #fff; color: var(--text); min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
   }
-  main { width: 100%; max-width: 440px; }
-  .screen { display: none; animation: fade .25s ease; }
-  .screen.active { display: block; }
-  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  main { width: 100%; max-width: 380px; }
+  .screen { display: none; }
+  .screen.active { display: block; animation: in .2s ease; }
+  @keyframes in { from { opacity: 0; } to { opacity: 1; } }
 
-  .logo { width: 64px; height: 64px; border-radius: 20px; margin: 0 auto 16px; display: grid; place-items: center;
-          background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; box-shadow: var(--shadow); }
-  .logo svg { width: 32px; height: 32px; }
-  h1 { font-size: 1.7rem; text-align: center; margin: 0 0 6px; letter-spacing: -.02em; }
-  h2 { font-size: 1.3rem; text-align: center; margin: 0 0 6px; letter-spacing: -.01em; }
-  p.sub { text-align: center; color: var(--muted); margin: 0 0 24px; line-height: 1.45; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 6px; text-align: center; letter-spacing: -.02em; }
+  h2 { font-size: 1.2rem; font-weight: 650; margin: 0 0 6px; text-align: center; }
+  .sub { color: var(--muted); text-align: center; margin: 0 0 22px; line-height: 1.45; font-size: .95rem; }
 
-  .choice {
-    display: flex; align-items: center; gap: 16px; width: 100%; text-align: left;
-    background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 18px;
-    padding: 18px; margin-bottom: 12px; cursor: pointer; box-shadow: var(--shadow); font: inherit;
-    transition: transform .12s ease, border-color .12s ease;
-  }
-  .choice:active { transform: scale(.98); }
-  .choice:hover { border-color: var(--accent); }
-  .choice .ico { flex: none; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; color: #fff; }
-  .choice .ico svg { width: 26px; height: 26px; }
-  .choice b { display: block; font-size: 1.05rem; }
-  .choice span.d { color: var(--muted); font-size: .9rem; }
+  .choice { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; font: inherit; color: inherit;
+            background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 10px; cursor: pointer; }
+  .choice:hover { background: var(--soft); }
+  .choice:active { transform: scale(.99); }
+  .choice svg { width: 26px; height: 26px; flex: none; stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .choice b { display: block; font-weight: 600; }
+  .choice small { color: var(--muted); }
 
-  .btn { display: block; width: 100%; padding: 15px; border: 0; border-radius: 14px; background: var(--accent);
-         color: #fff; font: inherit; font-weight: 600; font-size: 1.02rem; cursor: pointer; margin-top: 12px; }
-  .btn:active { transform: scale(.98); }
-  .btn.green { background: var(--accent2); color: #042f2e; }
-  .link { display: block; margin: 12px auto 0; background: none; border: 0; color: var(--muted); font: inherit;
-          font-size: .9rem; cursor: pointer; text-decoration: underline; padding: 6px; }
+  .btn { display: block; width: 100%; padding: 14px; border: 0; border-radius: 12px; background: var(--text); color: #fff;
+         font: inherit; font-weight: 600; cursor: pointer; margin-top: 14px; }
+  .btn.danger { background: #fff; color: var(--danger); border: 1px solid var(--line); }
+  .btn.light { background: var(--soft); color: var(--text); border: 1px solid var(--line); }
+  .link { display: block; margin: 10px auto 0; background: none; border: 0; color: var(--muted); font: inherit; font-size: .88rem; cursor: pointer; padding: 6px; }
+  .link:hover { color: var(--text); }
 
-  .steps { text-align: center; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
-
-  .qrbox { background: #fff; border-radius: 20px; padding: 10px; box-shadow: var(--shadow); width: 100%; aspect-ratio: 1; display: grid; place-items: center; }
+  .qrbox { border: 1px solid var(--line); border-radius: 16px; padding: 8px; aspect-ratio: 1; display: grid; place-items: center; background: #fff; }
   .qrbox canvas { width: 100%; height: 100%; image-rendering: pixelated; display: none; }
   .qrbox.ready canvas { display: block; }
   .qrbox.ready .spin { display: none; }
 
-  .spin { width: 40px; height: 40px; border-radius: 50%; border: 4px solid var(--border); border-top-color: var(--accent); animation: rot .8s linear infinite; }
+  .spin { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: rot .8s linear infinite; }
   @keyframes rot { to { transform: rotate(360deg); } }
 
-  .viewfinder { position: relative; width: 100%; aspect-ratio: 1; border-radius: 22px; overflow: hidden; background: #000; box-shadow: var(--shadow); }
-  .viewfinder video { width: 100%; height: 100%; object-fit: cover; }
-  .viewfinder i { position: absolute; width: 36px; height: 36px; border: 4px solid #fff; opacity: .9; }
-  .viewfinder i:nth-child(2) { top: 16px; left: 16px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
-  .viewfinder i:nth-child(3) { top: 16px; right: 16px; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
-  .viewfinder i:nth-child(4) { bottom: 16px; left: 16px; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; }
-  .viewfinder i:nth-child(5) { bottom: 16px; right: 16px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
+  .view { position: relative; aspect-ratio: 1; border-radius: 16px; overflow: hidden; background: #111; border: 1px solid var(--line); }
+  .view video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .view .frame { position: absolute; inset: 18%; border: 2px solid rgba(255,255,255,.85); border-radius: 14px; pointer-events: none; }
+  .view .msg { position: absolute; inset: 0; background: #fff; padding: 22px; display: none; flex-direction: column;
+               align-items: center; justify-content: center; text-align: center; gap: 12px; }
+  .view.error .msg { display: flex; }
+  .msg p { margin: 0; font-size: .93rem; line-height: 1.45; color: var(--text); }
+  .msg .code { font-size: .75rem; color: var(--muted); }
+  .msg button { padding: 10px 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--soft); font: inherit; cursor: pointer; }
 
-  .center { display: grid; place-items: center; padding: 40px 0 10px; }
-
-  .eq { display: flex; align-items: flex-end; justify-content: center; gap: 7px; height: 90px; margin: 30px 0 20px; }
-  .eq span { width: 12px; border-radius: 6px; background: linear-gradient(var(--accent), var(--accent2)); animation: bounce 1s ease-in-out infinite; }
+  .eq { display: flex; align-items: flex-end; justify-content: center; gap: 6px; height: 64px; margin: 10px 0 22px; }
+  .eq span { width: 8px; border-radius: 4px; background: var(--accent); animation: bounce 1s ease-in-out infinite; }
   .eq span:nth-child(1) { animation-delay: -.9s; } .eq span:nth-child(2) { animation-delay: -.6s; }
-  .eq span:nth-child(3) { animation-delay: -.3s; } .eq span:nth-child(4) { animation-delay: -.75s; }
-  .eq span:nth-child(5) { animation-delay: -.45s; }
-  @keyframes bounce { 0%,100% { height: 14px; } 50% { height: 84px; } }
+  .eq span:nth-child(3) { animation-delay: -.3s; } .eq span:nth-child(4) { animation-delay: -.75s; } .eq span:nth-child(5) { animation-delay: -.45s; }
+  @keyframes bounce { 0%,100% { height: 10px; } 50% { height: 60px; } }
 
-  .tip { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 12px; line-height: 1.4; }
+  .center { display: grid; place-items: center; padding: 30px 0 14px; }
+  .tip { text-align: center; color: var(--muted); font-size: .82rem; margin: 12px 0 0; }
   .hidden { display: none !important; }
 
-  #toast { position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translate(-50%, 30px);
-           background: #0f172a; color: #fff; padding: 12px 18px; border-radius: 12px; font-size: .92rem; opacity: 0;
-           pointer-events: none; transition: .25s; max-width: 90vw; text-align: center; z-index: 10; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); background: var(--text); color: #fff;
+           padding: 11px 16px; border-radius: 10px; font-size: .9rem; opacity: 0; pointer-events: none; transition: .2s; max-width: 90vw; text-align: center; }
   #toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
 </head>
 <body>
 <main>
 
-  <!-- HOME -->
   <section id="home" class="screen active">
-    <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>
-    </div>
     <h1>Phone Speaker</h1>
-    <p class="sub">Play your laptop's sound on your phone.<br>No account, no cables.</p>
+    <p class="sub">Play your laptop's sound on your phone.<br>Open this page on both devices.</p>
 
     <button class="choice" id="btnSend">
-      <div class="ico" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 19h20"/></svg>
-      </div>
-      <div><b>Send audio</b><span class="d">Use this on your laptop</span></div>
+      <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 19h20"/></svg>
+      <div><b>Send audio</b><small>On your laptop</small></div>
     </button>
-
     <button class="choice" id="btnRecv">
-      <div class="ico" style="background:linear-gradient(135deg,#14b8a6,#0d9488)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
-      </div>
-      <div><b>Play audio</b><span class="d">Use this on your phone</span></div>
+      <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
+      <div><b>Play audio</b><small>On your phone</small></div>
     </button>
-
-    <p class="tip">Open this same page on both devices.</p>
+    <p class="tip" id="envWarn"></p>
   </section>
 
-  <!-- LAPTOP: show QR -->
   <section id="sendQR" class="screen">
-    <div class="steps">Step 1 of 2</div>
     <h2>Scan with your phone</h2>
-    <p class="sub">On your phone, choose <b>Play audio</b> and point it at this code.</p>
+    <p class="sub">On the phone, tap <b>Play audio</b> and point the camera here.</p>
     <div class="qrbox" id="qrBoxA"><div class="spin"></div><canvas id="qrA"></canvas></div>
     <button class="btn" id="btnNextScan">Next: scan phone's reply</button>
-    <button class="link" id="copyA">Can't scan? Copy code instead</button>
+    <button class="link" id="copyA">Copy code instead</button>
     <button class="link" id="cancelA">Cancel</button>
   </section>
 
-  <!-- LAPTOP: scan reply -->
   <section id="scanReply" class="screen">
-    <div class="steps">Step 2 of 2</div>
-    <h2>Scan your phone's reply</h2>
-    <p class="sub">Hold your phone's screen up to the laptop camera.</p>
-    <div class="viewfinder"><video id="videoB" playsinline muted></video><i></i><i></i><i></i><i></i></div>
+    <h2>Scan the phone's reply</h2>
+    <p class="sub">Hold the phone's screen up to this camera.</p>
+    <div class="view" id="viewB">
+      <video id="videoB" playsinline muted autoplay></video><div class="frame"></div>
+      <div class="msg"><p></p><span class="code"></span><button>Try again</button></div>
+    </div>
     <button class="link" id="pasteB">Paste code instead</button>
     <button class="link" id="cancelB">Cancel</button>
   </section>
 
-  <!-- PHONE: scan laptop code -->
   <section id="scanOffer" class="screen">
-    <div class="steps">Step 1 of 2</div>
     <h2>Scan the laptop's code</h2>
-    <p class="sub">On your laptop, choose <b>Send audio</b>, then point this camera at the code.</p>
-    <div class="viewfinder"><video id="videoA" playsinline muted></video><i></i><i></i><i></i><i></i></div>
+    <p class="sub">On the laptop, tap <b>Send audio</b>, then point this camera at the code.</p>
+    <div class="view" id="viewA">
+      <video id="videoA" playsinline muted autoplay></video><div class="frame"></div>
+      <div class="msg"><p></p><span class="code"></span><button>Try again</button></div>
+    </div>
     <button class="link" id="pasteA">Paste code instead</button>
     <button class="link" id="cancelC">Cancel</button>
   </section>
 
-  <!-- PHONE: show reply QR -->
   <section id="replyQR" class="screen">
-    <div class="steps">Step 2 of 2</div>
-    <h2>Show this to your laptop</h2>
-    <p class="sub">On the laptop tap <b>Next: scan phone's reply</b>, then hold this screen up to its camera.</p>
+    <h2>Show this to the laptop</h2>
+    <p class="sub">On the laptop, tap <b>Next: scan phone's reply</b>, then hold this screen up to its camera.</p>
     <div class="qrbox" id="qrBoxB"><div class="spin"></div><canvas id="qrB"></canvas></div>
-    <p class="tip">Tip: turn your screen brightness up and hold steady.</p>
-    <button class="link" id="copyB">Can't scan? Copy code instead</button>
+    <p class="tip">Turn your brightness up and hold steady.</p>
+    <button class="link" id="copyB">Copy code instead</button>
     <button class="link" id="cancelD">Cancel</button>
   </section>
 
-  <!-- Connecting -->
   <section id="connecting" class="screen">
     <div class="center"><div class="spin"></div></div>
     <h2>Connecting…</h2>
-    <p class="sub">Hang on a second.</p>
   </section>
 
-  <!-- Live -->
   <section id="live" class="screen">
     <div class="eq"><span></span><span></span><span></span><span></span><span></span></div>
     <h2 id="liveTitle">Connected</h2>
     <p class="sub" id="liveSub"></p>
-    <button class="btn green hidden" id="tapPlay">Tap to start audio</button>
-    <button class="btn" id="btnStop" style="background:#ef4444">Disconnect</button>
+    <button class="btn light hidden" id="tapPlay">Tap to start audio</button>
+    <button class="btn danger" id="btnStop">Disconnect</button>
   </section>
 
 </main>
@@ -184,14 +147,14 @@
 <audio id="player" autoplay playsinline></audio>
 <div id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
   const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   const $ = id => document.getElementById(id);
   const state = { role: null, pc: null, stream: null, code: "", wake: null, scan: null };
 
-  /* ---------- UI helpers ---------- */
+  /* ---------- UI ---------- */
   function show(id) { document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id)); }
   function toast(msg) {
     const t = $("toast"); t.textContent = msg; t.classList.add("show");
@@ -202,8 +165,27 @@
     catch { prompt("Copy this code:", text); }
   }
 
+  /* ---------- Environment check ---------- */
+  (function envCheck() {
+    const ua = navigator.userAgent;
+    let warn = "";
+    if (!window.isSecureContext) warn = "This page must be opened with https:// (not http:// or a local file) for the camera and audio to work.";
+    else if (/FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\)/i.test(ua)) warn = "You're in an in-app browser. Open this link in Chrome or Safari instead.";
+    else if (window.top !== window.self) warn = "This page is inside a frame/preview. Open the link directly in a browser tab.";
+    $("envWarn").textContent = warn; if (warn) $("envWarn").style.color = "#dc2626";
+  })();
+
+  /* ---------- Libraries with backup sources ---------- */
+  function loadScript(src) {
+    return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  }
+  async function ensureLibs() {
+    if (!window.jsQR) for (const u of ["https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js", "https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"]) { try { await loadScript(u); if (window.jsQR) break; } catch {} }
+    if (!window.qrcode) for (const u of ["https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js", "https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"]) { try { await loadScript(u); if (window.qrcode) break; } catch {} }
+    if (!window.jsQR || !window.qrcode) throw { name: "LibraryError" };
+  }
+
   /* ---------- Compact signaling payload ---------- */
-  // Keep only what's needed so the QR code stays small and easy to scan.
   function slim(sdp) {
     const lines = sdp.split(/\r?\n/).filter(Boolean);
     let opus = null;
@@ -241,7 +223,8 @@
   }
 
   /* ---------- QR draw ---------- */
-  function drawQR(canvas, box, text) {
+  async function drawQR(canvas, box, text) {
+    await ensureLibs();
     const qr = qrcode(0, "L"); qr.addData(text); qr.make();
     const n = qr.getModuleCount(), quiet = 4, s = 6, size = (n + quiet * 2) * s;
     canvas.width = canvas.height = size;
@@ -252,29 +235,69 @@
     box.classList.add("ready");
   }
 
-  /* ---------- QR scan ---------- */
-  async function startScan(video, onCode) {
+  /* ---------- Camera + scan ---------- */
+  function camMessage(e) {
+    switch (e && e.name) {
+      case "InsecureContext": return "The camera needs a secure page. Open this site with https://.";
+      case "NotAllowedError":
+      case "SecurityError": return "Camera is blocked. Tap the lock icon next to the address bar, set Camera to Allow, then try again. (Also check your phone/OS settings for this browser.)";
+      case "NotFoundError":
+      case "OverconstrainedError": return "No camera was found on this device.";
+      case "NotReadableError":
+      case "AbortError": return "The camera is being used by another app or tab. Close it and try again.";
+      case "LibraryError": return "Couldn't load the scanner. Check your internet connection and try again.";
+      default: return "Couldn't start the camera.";
+    }
+  }
+
+  async function getCamera() {
+    if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw { name: "InsecureContext" };
+    const tries = [
+      { video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+      { video: { facingMode: { ideal: "environment" } } },
+      { video: true }
+    ];
+    let last;
+    for (const c of tries) {
+      try { return await navigator.mediaDevices.getUserMedia(c); }
+      catch (e) { last = e; if (e.name === "NotAllowedError" || e.name === "SecurityError") break; }
+    }
+    throw last;
+  }
+
+  async function startScan(viewId, videoId, onCode) {
     stopScan();
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
-    video.srcObject = stream; await video.play();
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    const scan = { stream, timer: null, active: true };
-    state.scan = scan;
-    const tick = () => {
-      if (!scan.active) return;
-      if (video.videoWidth) {
-        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
-        if (code && code.data) { stopScan(); onCode(code.data); return; }
-      }
-      scan.timer = setTimeout(tick, 120);
-    };
-    tick();
+    const view = $(viewId), video = $(videoId);
+    view.classList.remove("error");
+    try {
+      await ensureLibs();
+      const stream = await getCamera();
+      video.setAttribute("playsinline", ""); video.muted = true;
+      video.srcObject = stream;
+      try { await video.play(); } catch {}
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const scan = { stream, timer: null, active: true };
+      state.scan = scan;
+      const tick = () => {
+        if (!scan.active) return;
+        if (video.videoWidth) {
+          canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+          const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
+          if (code && code.data) { stopScan(); onCode(code.data); return; }
+        }
+        scan.timer = setTimeout(tick, 120);
+      };
+      tick();
+    } catch (e) {
+      const msg = view.querySelector(".msg");
+      msg.querySelector("p").textContent = camMessage(e);
+      msg.querySelector(".code").textContent = e && e.name ? "Error: " + e.name : "";
+      msg.querySelector("button").onclick = () => startScan(viewId, videoId, onCode);
+      view.classList.add("error");
+    }
   }
   function stopScan() {
     const s = state.scan; if (!s) return;
@@ -300,15 +323,15 @@
     show("live");
     if (state.role === "send") {
       $("liveTitle").textContent = "Streaming to your phone";
-      $("liveSub").textContent = "Tip: mute your laptop speakers so you don't hear it twice.";
+      $("liveSub").textContent = "Mute your laptop speakers to avoid hearing it twice.";
     } else {
       $("liveTitle").textContent = "Playing laptop audio";
-      $("liveSub").textContent = "Use your phone's volume buttons to adjust the sound.";
+      $("liveSub").textContent = "Use your phone's volume buttons to adjust.";
       try { state.wake = await navigator.wakeLock.request("screen"); } catch {}
     }
   }
 
-  function reset(silent) {
+  function reset() {
     stopScan();
     if (state.pc) { state.pc.close(); state.pc = null; }
     if (state.stream) { state.stream.getTracks().forEach(t => t.stop()); state.stream = null; }
@@ -320,10 +343,10 @@
     show("home");
   }
 
-  /* ---------- LAPTOP (sender) ---------- */
+  /* ---------- LAPTOP ---------- */
   $("btnSend").onclick = async () => {
     try {
-      // Windows: pick "Entire Screen" + tick "Share system audio". Mac: pick a Chrome tab + "Share tab audio".
+      // Windows: choose "Entire Screen" + tick "Share system audio". Mac: choose a Chrome tab + "Share tab audio".
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true, audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
       });
@@ -341,18 +364,14 @@
       await pc.setLocalDescription(await pc.createOffer());
       await waitForIce(pc);
       state.code = await pack("O", pc.localDescription.sdp);
-      drawQR($("qrA"), $("qrBoxA"), state.code);
+      await drawQR($("qrA"), $("qrBoxA"), state.code);
     } catch (err) {
-      if (err.name !== "NotAllowedError") toast("Couldn't start: " + err.message);
+      if (err && err.name !== "NotAllowedError") toast("Couldn't start: " + (err.message || err.name));
       reset();
     }
   };
 
-  $("btnNextScan").onclick = async () => {
-    show("scanReply");
-    try { await startScan($("videoB"), onAnswerCode); }
-    catch { toast("Camera permission is needed to scan."); show("sendQR"); }
-  };
+  $("btnNextScan").onclick = () => { show("scanReply"); startScan("viewB", "videoB", onAnswerCode); };
   $("copyA").onclick = () => copyText(state.code);
   $("pasteB").onclick = () => { const t = prompt("Paste the phone's reply code:"); if (t) { stopScan(); onAnswerCode(t.trim()); } };
 
@@ -363,18 +382,13 @@
       show("connecting");
       await state.pc.setRemoteDescription({ type: "answer", sdp });
     } catch {
-      toast("That's not the phone's reply code. Try again.");
-      show("scanReply"); startScan($("videoB"), onAnswerCode).catch(() => {});
+      toast("That isn't the phone's reply code. Try again.");
+      show("scanReply"); startScan("viewB", "videoB", onAnswerCode);
     }
   }
 
-  /* ---------- PHONE (receiver) ---------- */
-  $("btnRecv").onclick = async () => {
-    state.role = "recv";
-    show("scanOffer");
-    try { await startScan($("videoA"), onOfferCode); }
-    catch { toast("Camera permission is needed to scan."); reset(); }
-  };
+  /* ---------- PHONE ---------- */
+  $("btnRecv").onclick = () => { state.role = "recv"; show("scanOffer"); startScan("viewA", "videoA", onOfferCode); };
   $("pasteA").onclick = () => { const t = prompt("Paste the laptop's code:"); if (t) { stopScan(); onOfferCode(t.trim()); } };
 
   async function onOfferCode(text) {
@@ -392,16 +406,15 @@
       await waitForIce(pc);
       state.code = await pack("A", pc.localDescription.sdp);
       show("replyQR");
-      drawQR($("qrB"), $("qrBoxB"), state.code);
+      await drawQR($("qrB"), $("qrBoxB"), state.code);
     } catch {
-      toast("That's not the laptop's code. Try again.");
-      show("scanOffer"); startScan($("videoA"), onOfferCode).catch(() => {});
+      toast("That isn't the laptop's code. Try again.");
+      show("scanOffer"); startScan("viewA", "videoA", onOfferCode);
     }
   }
   $("copyB").onclick = () => copyText(state.code);
   $("tapPlay").onclick = () => { $("player").play().then(() => $("tapPlay").classList.add("hidden")).catch(() => {}); };
 
-  /* ---------- Shared ---------- */
   ["cancelA", "cancelB", "cancelC", "cancelD", "btnStop"].forEach(id => $(id).onclick = () => reset());
 </script>
 </body>
